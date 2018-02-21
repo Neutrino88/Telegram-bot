@@ -1,8 +1,13 @@
-import org.telegram.telegrambots.api.methods.send.SendSticker;
-import org.telegram.telegrambots.exceptions.TelegramApiException;
+package ru.ifmo.practice;
+
+import lombok.val;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.send.SendSticker;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -13,39 +18,27 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Scanner;
 
+@Log4j2
 public class Bot extends TelegramLongPollingBot {
     private String botToken;
-    private HashSet<String> users = new HashSet<String>();
-    private ArrayList<Message> messages = new ArrayList<Message>();
+    private HashSet<String> users = new HashSet<>();
+    private ArrayList<Message> messages = new ArrayList<>();
 
     public Bot(String token){
         botToken = token;
     }
 
+    @SneakyThrows
     public static void main(String[] args) {
-        String botToken;
-
         // Read Bot's token
-        try
-        {
-            File tokenFile = new File("src/main/resources/bot_token.txt");
-            Scanner scanner = new Scanner(tokenFile);
-            botToken = scanner.nextLine();
-        }
-        catch(Exception e){
-            System.out.println("Can't read bot's token!");
-            e.printStackTrace();
-            return;
-        }
+        val tokenFile = new File("src/main/resources/bot_token.txt");
+        val scanner = new Scanner(tokenFile);
+        String botToken = scanner.nextLine();
+
         // Init bot
         ApiContextInitializer.init();
-        TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
-
-        try {
-            telegramBotsApi.registerBot(new Bot(botToken));
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+        val telegramBotsApi = new TelegramBotsApi()
+                .registerBot(new Bot(botToken));
     }
 
     public String getBotUsername() {
@@ -68,7 +61,7 @@ public class Bot extends TelegramLongPollingBot {
         Message message = update.getMessage();
         messages.add(message);
 
-        printToConsole(message);
+        printMessageToLog(message);
 
         // save username
         // if user is new
@@ -90,41 +83,33 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
+    @SneakyThrows
     private void sendMessage(Message message, String text) {
-        SendMessage sMessage = new SendMessage();
-        sMessage.setChatId(message.getChatId());
-        sMessage.setText(text);
-        //sMessage.enableMarkdown(true);
-        //sendMessage.setReplyToMessageId(message.getMessageId());
-
-        try {
-            sendMessage(sMessage);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+        val sMessage = new SendMessage()
+            .setChatId(message.getChatId())
+            .setText(text);
+        //noinspection deprecation
+        sendMessage(sMessage);
     }
 
+    @SneakyThrows
     private void sendSticker(Message message, String stickerToken){
-        SendSticker sticker = new SendSticker();
-        sticker.setChatId(message.getChatId());
-        sticker.setSticker(stickerToken);
+        val sticker = new SendSticker()
+            .setChatId(message.getChatId())
+            .setSticker(stickerToken);
 
-        try {
-            sendSticker(sticker);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+        sendSticker(sticker);
     }
 
-    private void printToConsole(Message message){
-        System.out.println("login:" + message.getChat().getUserName());
+    private void printMessageToLog(Message message){
+        log.info("login:" + message.getChat().getUserName());
 
         if (message.getText() != null) {
-            System.out.println("text: " + message.getText() + "\n");
+            log.info("text: " + message.getText() + "\n");
         }
 
         if (message.getSticker() != null) {
-            System.out.println("sticker: " + message.getSticker().getFileId() + "\n");
+            log.info("sticker: " + message.getSticker().getFileId() + "\n");
         }
     }
 }
