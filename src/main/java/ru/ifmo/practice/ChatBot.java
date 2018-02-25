@@ -12,37 +12,45 @@ import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.Properties;
 
 @Log4j2
-public class Bot extends TelegramLongPollingBot {
+public class ChatBot extends TelegramLongPollingBot {
     private String botToken;
+    private String botUsername;
+
     private HashSet<String> users = new HashSet<>();
     private ArrayList<Message> messages = new ArrayList<>();
 
-    public Bot(String token){
-        botToken = token;
+    @SneakyThrows
+    public ChatBot(String pathSettings){
+        val props = new Properties();
+
+        try (InputStream inStream = ChatBot.class.getResourceAsStream(pathSettings)) {
+            props.load(inStream);
+
+            botToken = props.getProperty("token");
+            botUsername = props.getProperty("username");
+        }
+        catch (Exception e){
+            log.fatal("Can't load settings file!", e);
+        }
     }
 
     @SneakyThrows
     public static void main(String[] args) {
-        // Read Bot's token
-        val tokenFile = new File("src/main/resources/bot_token.txt");
-        val scanner = new Scanner(tokenFile);
-        String botToken = scanner.nextLine();
-
         // Init bot
         ApiContextInitializer.init();
         val telegramBotsApi = new TelegramBotsApi()
-                .registerBot(new Bot(botToken));
+                .registerBot(new ChatBot("/settings.properties"));
     }
 
     public String getBotUsername() {
-        return "olegs_simple_bot";
+        return botUsername;
     }
 
     @Override
