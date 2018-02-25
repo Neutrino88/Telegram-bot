@@ -8,6 +8,10 @@
     <artifactId>telegram-bot</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <name>Telegram bot</name>
+    <description>Program, which must pass the Turing test</description>
+    <url>https://github.com/Neutrino88/Telegram-bot</url>
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -36,5 +40,35 @@
             <version>LATEST</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Artificial Intelligence Markup Language-->
+        <dependency>
+            <artifactId>com.google</artifactId>
+            <groupId>Ab</groupId>
+            <version>0.0.4.3</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/Ab.jar</systemPath>
+        </dependency>
     </dependencies>
+
+    <build>
+        <finalName>telegram-bot</finalName>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.2</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>ru.ifmo.practice.ChatBot</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

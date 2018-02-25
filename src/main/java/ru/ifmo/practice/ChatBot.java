@@ -12,19 +12,15 @@ import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.HashMap;
 import java.util.Properties;
+import java.io.InputStream;
 
 @Log4j2
 public class ChatBot extends TelegramLongPollingBot {
     private String botToken;
     private String botUsername;
-
-    private HashSet<String> users = new HashSet<>();
-    private ArrayList<Message> messages = new ArrayList<>();
+    private HashMap<String, NluBot> bots = new HashMap<>();
 
     @SneakyThrows
     public ChatBot(String pathSettings){
@@ -65,30 +61,19 @@ public class ChatBot extends TelegramLongPollingBot {
     }
 
     private void getMessage(Update update){
-        // save message
         Message message = update.getMessage();
-        messages.add(message);
+        String userLogin = message.getChat().getUserName() ;
+        String requestMsg = (message.getText() == null) ? "" : message.getText();
 
-        printMessageToLog(message);
-
-        // save username
-        // if user is new
-        if (users.add(message.getChat().getUserName())) {
-            String first_name = message.getChat().getFirstName();
-            sendMessage(message, first_name + ", I haven't time :(\nCan you write to me later?");
+        if (! bots.containsKey(userLogin)){
+            val newBot = new NluBot();
+            bots.put(userLogin, newBot);
         }
-        else {
-            String[] angryStickerTokens = {
-                    "CAADBAADGgIAAuJy2QABeEernu20KnMC",
-                    "CAADAgADxgEAAu5izQdODlEtrOY2_gI",
-                    "CAADAgADBQUAAmvEygqACJYqPM8VfwI",
-                    "CAADAgAD2QEAAu5izQcssIrlHhk7xgI",
-                    "CAADAgADFwADwyiDDZxXAAGHyl5myAI",
-                    "CAADAgADPgMAAsSraAtfLLQnD0YAAcIC"
-            };
 
-            sendSticker(message, angryStickerTokens[new Random().nextInt(angryStickerTokens.length)]);
-        }
+        log.info(userLogin + ": " + requestMsg);
+        String responseMsg = bots.get(userLogin).getAnswer(requestMsg);
+        sendMessage(message, responseMsg);
+        log.info("Bot's answer: " + responseMsg);
     }
 
     @SneakyThrows
@@ -107,17 +92,5 @@ public class ChatBot extends TelegramLongPollingBot {
             .setSticker(stickerToken);
 
         sendSticker(sticker);
-    }
-
-    private void printMessageToLog(Message message){
-        log.info("login:" + message.getChat().getUserName());
-
-        if (message.getText() != null) {
-            log.info("text: " + message.getText() + "\n");
-        }
-
-        if (message.getSticker() != null) {
-            log.info("sticker: " + message.getSticker().getFileId() + "\n");
-        }
     }
 }
