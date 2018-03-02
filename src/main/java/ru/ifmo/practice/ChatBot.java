@@ -1,26 +1,36 @@
 package ru.ifmo.practice;
 
+import static lombok.AccessLevel.PRIVATE;
+
+import lombok.Getter;
 import lombok.val;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
+import lombok.experimental.FieldDefaults;
 
-import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
+import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.Message;
+import org.telegram.telegrambots.ApiContextInitializer;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendSticker;
-import org.telegram.telegrambots.api.objects.Message;
-import org.telegram.telegrambots.api.objects.Update;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 
 import java.util.HashMap;
 import java.util.Properties;
 import java.io.InputStream;
 
 @Log4j2
+@FieldDefaults(level= PRIVATE)
 public class ChatBot extends TelegramLongPollingBot {
-    private String botToken;
-    private String botUsername;
-    private HashMap<String, NluBot> bots = new HashMap<>();
+    private final static String FILE_SETTINGS = "/settings.properties";
+
+    @Getter
+    String botToken;
+    @Getter
+    String botUsername;
+
+    HashMap<String, NluBot> bots = new HashMap<>();
 
     @SneakyThrows
     public ChatBot(String pathSettings){
@@ -29,11 +39,13 @@ public class ChatBot extends TelegramLongPollingBot {
         try (InputStream inStream = ChatBot.class.getResourceAsStream(pathSettings)) {
             props.load(inStream);
 
-            botToken = props.getProperty("token");
-            botUsername = props.getProperty("username");
+            botToken = props.getProperty("token", "<no-token>");
+            botUsername = props.getProperty("username", "<no-username>");
+
+            log.info(() -> pathSettings + " file was successfully read ");
         }
         catch (Exception e){
-            log.fatal("Can't load settings file!", e);
+            log.fatal(() -> "Can't load settings from " + pathSettings, e);
         }
     }
 
@@ -41,23 +53,14 @@ public class ChatBot extends TelegramLongPollingBot {
     public static void main(String[] args) {
         // Init bot
         ApiContextInitializer.init();
-        val telegramBotsApi = new TelegramBotsApi()
-                .registerBot(new ChatBot("/settings.properties"));
-    }
-
-    public String getBotUsername() {
-        return botUsername;
+        new TelegramBotsApi()
+                .registerBot(new ChatBot(FILE_SETTINGS));
     }
 
     @Override
-    public String getBotToken() {
-        return botToken;
-    }
-
     public void onUpdateReceived(Update update) {
-        if (update.getMessage() != null){
+        if (update.getMessage() != null)
             getMessage(update);
-        }
     }
 
     private void getMessage(Update update){
@@ -65,32 +68,27 @@ public class ChatBot extends TelegramLongPollingBot {
         String userLogin = message.getChat().getUserName() ;
         String requestMsg = (message.getText() == null) ? "" : message.getText();
 
-        if (! bots.containsKey(userLogin)){
-            val newBot = new NluBot();
-            bots.put(userLogin, newBot);
-        }
+        if (! bots.containsKey(userLogin))
+            bots.put(userLogin, new NluBot());
 
-        log.info(userLogin + ": " + requestMsg);
+        log.info(() -> userLogin + ": " + requestMsg);
         String responseMsg = bots.get(userLogin).getAnswer(requestMsg);
         sendMessage(message, responseMsg);
-        log.info("Bot's answer: " + responseMsg);
+        log.info(() -> "Bot's answer: " + responseMsg);
     }
 
     @SneakyThrows
     private void sendMessage(Message message, String text) {
-        val sMessage = new SendMessage()
-            .setChatId(message.getChatId())
-            .setText(text);
         //noinspection deprecation
-        sendMessage(sMessage);
+        sendMessage(new SendMessage()
+                .setChatId(message.getChatId())
+                .setText(text));
     }
 
     @SneakyThrows
     private void sendSticker(Message message, String stickerToken){
-        val sticker = new SendSticker()
-            .setChatId(message.getChatId())
-            .setSticker(stickerToken);
-
-        sendSticker(sticker);
+        sendSticker(new SendSticker()
+                .setChatId(message.getChatId())
+                .setSticker(stickerToken));
     }
 }
