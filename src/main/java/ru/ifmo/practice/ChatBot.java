@@ -30,6 +30,7 @@ public class ChatBot extends TelegramLongPollingBot {
     @Getter
     String botUsername;
 
+    Translator translator;
     HashMap<String, NluBot> bots = new HashMap<>();
 
     @SneakyThrows
@@ -41,6 +42,7 @@ public class ChatBot extends TelegramLongPollingBot {
 
             botToken = props.getProperty("token", "<no-token>");
             botUsername = props.getProperty("username", "<no-username>");
+            translator = new Translator(props.getProperty("yandex_translator_api_key", "<no-api-key>"));
 
             log.info(() -> pathSettings + " file was successfully read ");
         }
@@ -71,10 +73,26 @@ public class ChatBot extends TelegramLongPollingBot {
         if (! bots.containsKey(userLogin))
             bots.put(userLogin, new NluBot());
 
-        log.info(() -> userLogin + ": " + requestMsg);
+        log.info("{}: {}", userLogin, requestMsg);
+
+        // translate to english
+        String languageCode = translator.getLanguageCode(requestMsg);
+        if (languageCode.isEmpty())
+            languageCode = translator.getLastLanguageCode();
+
+        if (! languageCode.equals("en"))
+            requestMsg = translator.getTranslation(requestMsg, "en");
+
+        // get answer
         String responseMsg = bots.get(userLogin).getAnswer(requestMsg);
+
+        // translate to original language
+        if (! languageCode.equals("en"))
+            responseMsg = translator.getTranslation(responseMsg, languageCode);
+
+        // send message
         sendMessage(message, responseMsg);
-        log.info(() -> "Bot's answer: " + responseMsg);
+        log.info("Bot's answer: {}", responseMsg);
     }
 
     @SneakyThrows
