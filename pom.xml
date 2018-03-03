@@ -12,11 +12,6 @@
     <description>Program, which must pass the Turing test</description>
     <url>https://github.com/Neutrino88/Telegram-bot</url>
 
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
-
     <dependencies>
         <!-- Log4J2-slf4j-impl -->
         <dependency>
@@ -41,34 +36,58 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Artificial Intelligence Markup Language-->
+        <!-- Simplified NLU API: https://howtodoinjava.com/ai/java-aiml-chatbot-example/ -->
         <dependency>
             <artifactId>com.google</artifactId>
             <groupId>Ab</groupId>
             <version>0.0.4.3</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/Ab.jar</systemPath>
         </dependency>
     </dependencies>
 
     <build>
-        <finalName>telegram-bot</finalName>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
                 <configuration>
-                    <encoding>UTF-8</encoding>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
                     <archive>
                         <manifest>
-                            <addClasspath>true</addClasspath>
                             <mainClass>ru.ifmo.practice.ChatBot</mainClass>
                         </manifest>
                     </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                        <phase>package</phase> <!-- bind to the packaging phase -->
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
+
+
+    <repositories>
+        <repository>
+            <id>my-local-repo</id>
+            <url>file://${basedir}/lib</url>
+        </repository>
+    </repositories>
 </project>
